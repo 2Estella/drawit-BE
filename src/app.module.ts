@@ -7,6 +7,6 @@ import { DrawingService } from './drawing/drawing.service';
 @Module({
   imports: [DrawingModule],
   controllers: [AppController],
-  providers: [AppService, DrawingService],
+  providers: [AppService, DrawingService]
 })
 export class AppModule {}

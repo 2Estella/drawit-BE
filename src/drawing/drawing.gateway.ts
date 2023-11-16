@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+// import { Logger } from '@nestjs/common'
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -6,20 +6,18 @@ import {
   OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
-  MessageBody,
+  MessageBody
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { DrawingService } from './drawing.service';
 
-@WebSocketGateway(3030, {
-  namespace: 'chat',
-  cors: { origin: '*' },
+@WebSocketGateway(8080, {
+  // namespace: 'chat',
+  cors: { origin: '*' }
 })
-export class DrawingGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
-{
+export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer() server: Server;
-  private logger: Logger = new Logger('EventsGateway');
+  // private logger: Logger = new Logger('EventsGateway')
 
   constructor(private readonly drawingService: DrawingService) {}
 
@@ -32,12 +30,14 @@ export class DrawingGateway
   }
 
   afterInit(server: Server) {
-    this.logger.log('웹소켓 서버 초기화');
+    // this.logger.log('웹소켓 서버 초기화')
     // this.drawingService.init(server);
   }
 
   @SubscribeMessage('draw')
   handleDraw(@MessageBody() data: any) {
+    console.log('nest data', data);
     this.drawingService.handleDraw(data);
+    this.server.emit('data', data);
   }
 }

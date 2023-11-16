@@ -10,11 +10,11 @@ export class DrawingService {
   }
 
   handleDisconnect(client: Socket) {
-    this.clients = this.clients.filter((c) => c !== client);
+    this.clients = this.clients.filter(c => c !== client);
   }
 
   handleDraw(data: any) {
-    this.clients.forEach((client) => {
+    this.clients.forEach(client => {
       client.emit('draw', data);
     });
   }

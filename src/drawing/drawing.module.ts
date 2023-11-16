@@ -5,6 +5,6 @@ import { DrawingGateway } from './drawing.gateway';
 
 @Module({
   controllers: [DrawingController],
-  providers: [DrawingService, DrawingGateway],
+  providers: [DrawingService, DrawingGateway]
 })
 export class DrawingModule {}
