@@ -18,4 +18,10 @@ export class DrawingService {
       client.emit('draw', data);
     });
   }
+
+  handleChat(data: string) {
+    this.clients.forEach(client => {
+      client.emit('chat', data);
+    });
+  }
 }
