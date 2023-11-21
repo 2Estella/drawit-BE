@@ -7,6 +7,9 @@ export class DrawingService {
 
   handleConnection(client: Socket) {
     this.clients.push(client);
+    client.leave(client.id);
+    client.data.roomId = 'room:lobby';
+    client.join('room:lobby');
   }
 
   handleDisconnect(client: Socket) {
@@ -16,12 +19,6 @@ export class DrawingService {
   handleDraw(data: any) {
     this.clients.forEach(client => {
       client.emit('draw', data);
-    });
-  }
-
-  handleChat(data: string) {
-    this.clients.forEach(client => {
-      client.emit('chat', data);
     });
   }
 }

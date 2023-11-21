@@ -3,7 +3,7 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  OnGatewayInit,
+  // OnGatewayInit,
   SubscribeMessage,
   MessageBody
 } from '@nestjs/websockets';
@@ -13,10 +13,10 @@ import { DrawingService } from './drawing.service';
 @WebSocketGateway(8080, {
   cors: { origin: '*' }
 })
-export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
-  @WebSocketServer() server: Server;
-
+export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly drawingService: DrawingService) {}
+  @WebSocketServer()
+  server: Server;
 
   handleConnection(client: Socket) {
     this.drawingService.handleConnection(client);
@@ -26,9 +26,23 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect,
     this.drawingService.handleDisconnect(client);
   }
 
-  afterInit(server: Server) {
-    // this.logger.log('웹소켓 서버 초기화')
-    // this.drawingService.init(server);
+  @SubscribeMessage('setInit')
+  setInit(client: Socket, data) {
+    if (client.data.isInit) {
+      return;
+    }
+
+    client.data.nickname = data.nickname ? data.nickname : `user-${client.id}`;
+    client.data.isInit = true;
+
+    return {
+      id: client.id,
+      nickname: client.data.nickname,
+      room: {
+        roomId: 'room:lobby',
+        name: '로비'
+      }
+    };
   }
 
   @SubscribeMessage('draw')
@@ -37,8 +51,14 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect,
     // this.server.emit('data', data);
   }
 
-  @SubscribeMessage('chat')
-  handleChat(@MessageBody() data: string) {
-    this.drawingService.handleChat(data);
+  @SubscribeMessage('sendMessage')
+  sendMessage(client: Socket, message: string): void {
+    client.rooms.forEach(roomId =>
+      client.to(roomId).emit('getMessage', {
+        id: client.id,
+        nickname: client.data.nickname,
+        message
+      })
+    );
   }
 }
