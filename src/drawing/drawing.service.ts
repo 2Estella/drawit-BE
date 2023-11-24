@@ -4,28 +4,25 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class DrawingService {
-  private roomList;
-  constructor() {
-    this.roomList = {
-      'room:lobby': {
-        roomId: 'room:lobby',
-        roomName: '로비',
-        masterId: null
-      }
-    };
-  }
+  private roomList: Record<string, { roomId: string; roomName: string; masterId: string }> = {
+    'room:lobby': {
+      roomId: 'room:lobby',
+      roomName: '로비',
+      masterId: null
+    }
+  };
 
-  createRoom(client: Socket, nickname: string, roomName: string): void {
+  createRoom(client: Socket, data: { [key: string]: string }): void {
     const roomId = `room:${uuidv4()}`;
     client.emit('getMessage', {
       id: null,
       nickname: '안내',
-      message: `"${nickname}"님이 "${roomName}"방을 생성하였습니다.`
+      message: `"${data.nickname}"님이 "${data.roomName}"방을 생성하였습니다.`
     });
 
     this.roomList[roomId] = {
       roomId,
-      roomName,
+      roomName: data.roomName,
       masterId: client.id
     };
 
@@ -49,9 +46,9 @@ export class DrawingService {
   }
 
   exitRoom(client: Socket, roomId: string) {
-    client.data.roomId = `room:lobby`;
+    client.data.roomId = roomId;
     client.rooms.clear();
-    client.join(`room:lobby`);
+    client.join(roomId);
 
     const { nickname } = client.data;
     client.to(roomId).emit('getMessage', {
