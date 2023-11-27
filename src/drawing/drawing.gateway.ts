@@ -27,11 +27,11 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   handleDisconnect(client: Socket) {
     const { roomId } = client.data;
-    if (!this.server.sockets.adapter.rooms.get(roomId)) {
+    if (roomId !== 'room:lobby' && !this.server.sockets.adapter.rooms.get(roomId)) {
+      this.drawingService.exitRoom(client, client.data.roomId);
       this.drawingService.deleteRoom(roomId);
       this.server.emit('getRoomList', this.drawingService.getRoomList());
     }
-    console.log('disconnected : ', client.id);
   }
 
   @SubscribeMessage('setInit')
@@ -81,12 +81,20 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       this.drawingService.deleteRoom(client.data.roomId);
     }
 
-    this.drawingService.deleteRoom(client.data.roomId);
+    this.drawingService.enterRoom(client, roomId);
 
+    const roomInfo = this.drawingService.getRoom(roomId);
     return {
       roomId: roomId,
-      roomName: this.drawingService.getRoom(roomId).roomName
+      roomName: roomInfo ? roomInfo.roomName : ''
     };
+  }
+
+  @SubscribeMessage('exitRoom')
+  exitRoom(client: Socket) {
+    if (client.data.roomId !== 'room:lobby' && this.server.sockets.adapter.rooms.get(client.data.roomId).size === 1) {
+      this.drawingService.exitRoom(client, client.data.roomId);
+    }
   }
 
   @SubscribeMessage('setNickname')
@@ -102,6 +110,7 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   @SubscribeMessage('sendMessage')
   sendMessage(client: Socket, message: string) {
     console.log('message: ', message);
+    console.log('client', client);
     console.log('rooms: ', client.rooms);
     client.rooms.forEach(roomId =>
       client.to(roomId).emit('getMessage', {

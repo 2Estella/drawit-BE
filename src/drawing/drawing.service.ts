@@ -4,26 +4,29 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class DrawingService {
-  private roomList: Record<string, { roomId: string; roomName: string; masterId: string }> = {
+  private roomList: Record<string, { roomId: string; roomName: string; masterId: string; members: number }> = {
     'room:lobby': {
       roomId: 'room:lobby',
       roomName: '로비',
-      masterId: null
+      masterId: null,
+      members: 0
     }
   };
 
   createRoom(client: Socket, data: { [key: string]: string }): void {
+    const { nickname, roomName } = data;
     const roomId = `room:${uuidv4()}`;
     client.emit('getMessage', {
       id: null,
       nickname: '안내',
-      message: `"${data.nickname}"님이 "${data.roomName}"방을 생성하였습니다.`
+      message: `"${nickname}"님이 "${roomName}"방을 생성하였습니다.`
     });
 
     this.roomList[roomId] = {
       roomId,
-      roomName: data.roomName,
-      masterId: client.id
+      roomName: roomName,
+      masterId: client.id,
+      members: 1
     };
 
     client.data.roomId = roomId;
@@ -36,6 +39,10 @@ export class DrawingService {
     client.rooms.clear();
     client.join(roomId);
 
+    console.log('roomList', this.roomList[roomId]);
+
+    this.roomList[roomId].members = this.roomList[roomId].members + 1;
+
     const { nickname } = client.data;
     const { roomName } = this.getRoom(roomId);
     client.to(roomId).emit('getMessage', {
@@ -46,15 +53,15 @@ export class DrawingService {
   }
 
   exitRoom(client: Socket, roomId: string) {
-    client.data.roomId = roomId;
+    this.roomList[roomId].members = this.roomList[roomId].members - 1;
+
     client.rooms.clear();
-    client.join(roomId);
 
     const { nickname } = client.data;
     client.to(roomId).emit('getMessage', {
       id: null,
       nickname: '안내',
-      message: `"${nickname}"님이 방에서 나갔습니다.`
+      message: `"${nickname ?? '알수없음'}"님이 방에서 나갔습니다.`
     });
   }
 
