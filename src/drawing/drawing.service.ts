@@ -15,6 +15,7 @@ export class DrawingService {
 
   createRoom(client: Socket, data: { [key: string]: string }): void {
     const { nickname, roomName } = data;
+    console.log('data!!!!', data);
     const roomId = `room:${uuidv4()}`;
     client.emit('getMessage', {
       id: null,
@@ -39,9 +40,10 @@ export class DrawingService {
     client.rooms.clear();
     client.join(roomId);
 
-    console.log('roomList', this.roomList[roomId]);
+    // console.log(this.roomList[roomId])
 
-    this.roomList[roomId].members = this.roomList[roomId].members + 1;
+    this.roomList[roomId].members = this.roomList[roomId].members + 1 ?? 0;
+    console.log('roomList', this.roomList[roomId]);
 
     const { nickname } = client.data;
     const { roomName } = this.getRoom(roomId);
@@ -52,17 +54,41 @@ export class DrawingService {
     });
   }
 
-  exitRoom(client: Socket, roomId: string) {
-    this.roomList[roomId].members = this.roomList[roomId].members - 1;
+  exitRoom(client: Socket) {
+    const { roomId } = client.data;
+    if (this.roomList[roomId]) {
+      this.roomList[roomId].members = this.roomList[roomId].members - 1;
 
-    client.rooms.clear();
+      const { nickname } = client.data;
+      client.to(roomId).emit('getMessage', {
+        id: null,
+        nickname: '안내',
+        message: `"${nickname ?? '알수없음'}"님이 방에서 나갔습니다.`
+      });
 
-    const { nickname } = client.data;
-    client.to(roomId).emit('getMessage', {
-      id: null,
-      nickname: '안내',
-      message: `"${nickname ?? '알수없음'}"님이 방에서 나갔습니다.`
-    });
+      if (this.roomList[roomId].members === 0) {
+        this.deleteRoom(roomId);
+      }
+
+      client.data.roomId = 'room:lobby';
+      client.rooms.clear();
+      client.join('room:lobby');
+    } else {
+      console.error(`exitRoom: ${roomId}가 존재하지 않습니다.`);
+    }
+    // console.log('is working? ');
+    // this.roomList[roomId].members = this.roomList[roomId].members - 1;
+
+    // const { nickname } = client.data;
+    // client.to(roomId).emit('getMessage', {
+    //   id: null,
+    //   nickname: '안내',
+    //   message: `"${nickname ?? '알수없음'}"님이 방에서 나갔습니다.`
+    // });
+
+    // client.data.roomId = `room:lobby`;
+    // client.rooms.clear();
+    // client.join(`room:lobby`);
   }
 
   getRoom(roomId: string) {
