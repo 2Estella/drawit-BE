@@ -27,14 +27,16 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   handleDisconnect(client: Socket) {
     const { roomId } = client.data;
-    console.log('handleDisconnect', this.server.sockets.adapter.rooms.get(roomId));
-    if (roomId !== 'room:lobby' && !this.server.sockets.adapter.rooms.get(roomId)) {
-      this.drawingService.exitRoom(client);
-      // this.drawingService.exitRoom(client, client.data.roomId);
-      this.drawingService.deleteRoom(roomId);
 
-      this.server.emit('getRoomList', this.drawingService.getRoomList());
+    if (roomId !== 'room:lobby') {
+      this.drawingService.exitRoom(client);
+
+      if (this.server.sockets.adapter.rooms.get(client.data.roomId).size <= 1) {
+        this.drawingService.deleteRoom(roomId);
+      }
     }
+
+    this.server.emit('getRoomList', this.drawingService.getRoomList());
   }
 
   @SubscribeMessage('setInit')
@@ -60,14 +62,13 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   }
 
   @SubscribeMessage('createRoom')
-  createRoom(client: Socket, data: { [key: string]: string }) {
-    console.log('createRoom data : ', data);
+  createRoom(client: Socket, data: { nickname: string; roomName: string }) {
     if (client.data.roomId !== 'room:lobby' && this.server.sockets.adapter.rooms.get(client.data.roomId).size === 1) {
       this.drawingService.deleteRoom(client.data.roomId);
     }
 
     client.data.nickname = data.nickname;
-    this.drawingService.createRoom(client, data);
+    this.drawingService.createRoom(client, data.roomName);
 
     return {
       roomId: client.data.roomId,
@@ -81,14 +82,12 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       return;
     }
 
-    console.log('enterRoom data : ', data);
-
     if (client.data.roomId !== 'room:lobby' && this.server.sockets.adapter.rooms.get(client.data.roomId).size === 1) {
       this.drawingService.deleteRoom(client.data.roomId);
     }
 
     if (!this.server.sockets.adapter.rooms.get(data.roomId)) {
-      this.drawingService.createRoom(client, client.data);
+      this.drawingService.createRoom(client, data.roomName);
     } else {
       this.drawingService.enterRoom(client, data.roomId);
     }
@@ -101,25 +100,24 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
     };
   }
 
+  @SubscribeMessage('checkRoomExist')
+  checkRoomExist(client: Socket, data: string) {
+    return { exist: client.rooms.has(data) ? true : false };
+  }
+
   @SubscribeMessage('exitRoom')
   exitRoom(client: Socket) {
     if (client.data.roomId !== 'room:lobby') {
       this.drawingService.exitRoom(client);
       this.server.emit('getRoomList', this.drawingService.getRoomList());
     }
-    this.server.to(client.data.roomId).emit('updateRoomMembers', {
-      roomId: client.data.roomId,
-      members: this.drawingService.getRoom(client.data.roomId)?.members ?? 0
-    });
-
+    // this.server.to(client.data.roomId).emit('updateRoomMembers', {
+    //   roomId: client.data.roomId,
+    //   members: this.drawingService.getRoom(client.data.roomId)?.members ?? 0
+    // });
     return {
       result: 'success'
     };
-    // if (client.data.roomId !== 'room:lobby' && this.server.sockets.adapter.rooms.get(client.data.roomId).size === 1) {
-    //   this.drawingService.deleteRoom(client.data.roomId);
-    // }
-
-    // this.drawingService.exitRoom(client, client.data.roomId);
   }
 
   @SubscribeMessage('setNickname')
@@ -134,8 +132,6 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   @SubscribeMessage('sendMessage')
   sendMessage(client: Socket, message: string) {
-    console.log('message: ', message);
-    console.log('rooms: ', client.rooms);
     client.rooms.forEach(roomId =>
       client.to(roomId).emit('getMessage', {
         id: client.id,
