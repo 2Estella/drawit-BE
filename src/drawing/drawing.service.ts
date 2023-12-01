@@ -13,18 +13,19 @@ export class DrawingService {
     }
   };
 
-  createRoom(client: Socket, data: string): void {
+  createRoom(client: Socket, data): void {
     // 최대 방 생성 갯수를 10개로 제한
-    if (Object.keys(this.roomList).length >= 2) {
+    if (Object.keys(this.roomList).length >= 10) {
       client.emit('errorMessage', '방은 최대 10개까지 생성이 가능합니다. 현재 방이 모두 찼습니다.');
       return;
     }
 
-    const roomId = `room:${uuidv4()}`;
+    // roomId가 존재하면 사용하고 아니라면 새로 생성함
+    const roomId = data.roomId ?? `room:${uuidv4()}`;
 
     this.roomList[roomId] = {
       roomId,
-      roomName: data,
+      roomName: data.roomName,
       masterId: client.id,
       members: 1
     };
@@ -36,7 +37,7 @@ export class DrawingService {
     client.emit('getMessage', {
       id: null,
       nickname: '안내',
-      message: `"${client.data.nickname}"님이 "${data}"방을 생성하였습니다.`
+      message: `"${client.data.nickname}"님이 "${data.roomName}"방을 생성하였습니다.`
     });
   }
 
@@ -46,8 +47,8 @@ export class DrawingService {
     client.join(roomId);
 
     this.roomList[roomId].members = this.roomList[roomId].members + 1 ?? 0;
-    console.log('roomList', this.roomList[roomId]);
 
+    console.log('client', client.data);
     const { nickname } = client.data;
     const { roomName } = this.getRoom(roomId);
 
@@ -60,6 +61,7 @@ export class DrawingService {
 
   exitRoom(client: Socket) {
     const { roomId } = client.data;
+
     if (this.roomList[roomId]) {
       this.roomList[roomId].members = this.roomList[roomId].members - 1;
 

@@ -68,7 +68,9 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
     }
 
     client.data.nickname = data.nickname;
-    this.drawingService.createRoom(client, data.roomName);
+    this.drawingService.createRoom(client, data);
+
+    console.log('client roomId', client.data.roomId);
 
     return {
       roomId: client.data.roomId,
@@ -87,10 +89,12 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
     }
 
     if (!this.server.sockets.adapter.rooms.get(data.roomId)) {
-      this.drawingService.createRoom(client, data.roomName);
+      this.drawingService.createRoom(client, data);
     } else {
       this.drawingService.enterRoom(client, data.roomId);
     }
+
+    // this.drawingService.enterRoom(client, data.roomId);
 
     const roomInfo = this.drawingService.getRoom(data.roomId);
 
@@ -98,11 +102,6 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       roomId: data.roomId,
       roomName: roomInfo ? roomInfo.roomName : ''
     };
-  }
-
-  @SubscribeMessage('checkRoomExist')
-  checkRoomExist(client: Socket, data: string) {
-    return { exist: client.rooms.has(data) ? true : false };
   }
 
   @SubscribeMessage('exitRoom')
