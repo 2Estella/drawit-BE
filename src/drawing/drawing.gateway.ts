@@ -8,6 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { DrawingService } from './drawing.service';
+import { CreateRoomDto, ResultDto, RoomDto, RoomItemDto, SetInitDto } from './dto/drawing.dto';
 
 @WebSocketGateway(8080, {
   cors: { origin: '*' }
@@ -40,7 +41,7 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   }
 
   @SubscribeMessage('setInit')
-  setInit(client: Socket, data) {
+  setInit(client: Socket, data: SetInitDto): RoomDto {
     if (!client.data.isInit) {
       client.data.nickname = data.nickname ? data.nickname : `user-${client.id}`;
       client.data.isInit = true;
@@ -62,15 +63,13 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   }
 
   @SubscribeMessage('createRoom')
-  createRoom(client: Socket, data: { nickname: string; roomName: string }) {
+  createRoom(client: Socket, data: CreateRoomDto): RoomItemDto {
     if (client.data.roomId !== 'room:lobby' && this.server.sockets.adapter.rooms.get(client.data.roomId).size === 1) {
       this.drawingService.deleteRoom(client.data.roomId);
     }
 
     client.data.nickname = data.nickname;
     this.drawingService.createRoom(client, data);
-
-    console.log('client roomId', client.data.roomId);
 
     return {
       roomId: client.data.roomId,
@@ -79,7 +78,7 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   }
 
   @SubscribeMessage('enterRoom')
-  enterRoom(client: Socket, data) {
+  enterRoom(client: Socket, data: CreateRoomDto): RoomItemDto {
     if (client.rooms.has(data.roomId)) {
       return;
     }
@@ -105,7 +104,7 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   }
 
   @SubscribeMessage('exitRoom')
-  exitRoom(client: Socket) {
+  exitRoom(client: Socket): ResultDto {
     if (client.data.roomId !== 'room:lobby') {
       this.drawingService.exitRoom(client);
       this.server.emit('getRoomList', this.drawingService.getRoomList());

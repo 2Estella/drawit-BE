@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
+import { CreateRoomDto, RoomListDto } from './dto/drawing.dto';
 
 @Injectable()
 export class DrawingService {
-  private roomList: Record<string, { roomId: string; roomName: string; masterId: string; members: number }> = {
+  private roomList: Record<string, RoomListDto> = {
     'room:lobby': {
       roomId: 'room:lobby',
       roomName: '로비',
@@ -13,7 +14,7 @@ export class DrawingService {
     }
   };
 
-  createRoom(client: Socket, data): void {
+  createRoom(client: Socket, data: CreateRoomDto) {
     // 최대 방 생성 갯수를 10개로 제한
     if (Object.keys(this.roomList).length >= 10) {
       client.emit('errorMessage', '방은 최대 10개까지 생성이 가능합니다. 현재 방이 모두 찼습니다.');
@@ -48,7 +49,6 @@ export class DrawingService {
 
     this.roomList[roomId].members = this.roomList[roomId].members + 1 ?? 0;
 
-    console.log('client', client.data);
     const { nickname } = client.data;
     const { roomName } = this.getRoom(roomId);
 
