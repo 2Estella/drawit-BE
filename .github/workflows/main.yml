@@ -57,11 +57,13 @@ jobs:
           script: |
             mkdir -p /home/ubuntu/drawit
             cd /home/ubuntu/drawit
+            
             aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
             aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws configure set region ${{ env.AWS_REGION }}
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+            
             sudo docker stop ${{ env.ECR_REPOSITORY }} || true
             sudo docker rm ${{ env.ECR_REPOSITORY }} || true
+            
             sudo docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
             sudo docker run -d --name drawit -p 8080:8080 ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
