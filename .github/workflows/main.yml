@@ -55,7 +55,13 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PEM_KEY }}
           script: |
-            cd /home/ubuntu/Eye_of_AI_Client
+            mkdir -p /home/ubuntu/drawit
+
+            sudo apt-get update
+            sudo apt-get install -y awscli
+            sudo apt-get install -y docker.io
+
+            cd /home/ubuntu/drawit
             aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
             aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws configure set region ${{ env.AWS_REGION }}
@@ -63,6 +69,4 @@ jobs:
             sudo docker stop ${{ env.ECR_REPOSITORY }} || true
             sudo docker rm ${{ env.ECR_REPOSITORY }} || true
             sudo docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-            sudo docker run -d --name eyeofai -p 3080:3080 ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-  
-      
+            sudo docker run -d --name drawit -p 8080:8080 ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
