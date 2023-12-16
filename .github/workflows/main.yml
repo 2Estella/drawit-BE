@@ -46,9 +46,9 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
 
         run: |
-          docker build -t ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest .
-          docker push ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-          echo "image=${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest"
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
       - name: Deploy on EC2 instance
         uses: appleboy/ssh-action@v0.1.6
@@ -64,8 +64,8 @@ jobs:
             aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws configure set region ${{ env.AWS_REGION }}
             
-            sudo docker stop ${{ secrets.ECR_REPOSITORY }} || true
-            sudo docker rm ${{ secrets.ECR_REPOSITORY }} || true
+            sudo docker stop ${{ env.ECR_REPOSITORY }} || true
+            sudo docker rm ${{ env.ECR_REPOSITORY }} || true
 
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
             sudo docker pull ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
