@@ -39,7 +39,10 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
         with:
           registry: ${{ secrets.ECR_REGISTRY }}
-          maskPassword: true
+    
+      - name: Pull Docker Image from ECR
+        run: |
+          docker pull ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
