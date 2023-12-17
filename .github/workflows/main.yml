@@ -42,12 +42,15 @@ jobs:
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
 
         run: |
-          docker build -t ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest .
-          docker push ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-          echo "image=${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest"
-          echo "ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}"
+          docker build -t ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest .
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          echo "image=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest"
+          echo "secrets ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}"
+          echo "env ECR_REGISTRY: ${{ env.ECR_REGISTRY }}"
 
       - name: Deploy on EC2 instance
         uses: appleboy/ssh-action@v0.1.6
