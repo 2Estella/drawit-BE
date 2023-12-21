@@ -10,8 +10,9 @@ import { Server, Socket } from 'socket.io';
 import { DrawingService } from './drawing.service';
 import { CreateRoomDto, ResultDto, RoomDto, RoomItemDto, SetInitDto } from './dto/drawing.dto';
 
-@WebSocketGateway(8080, {
-  cors: { origin: '*' }
+@WebSocketGateway({
+  cors: { origin: '*' },
+  path: '/drawit'
 })
 export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly drawingService: DrawingService) {}
@@ -19,6 +20,10 @@ export class DrawingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   server: Server;
 
   handleConnection(client: Socket) {
+    if (!client.data) {
+      client.data = {};
+    }
+
     client.leave(client.id);
     client.data.roomId = 'room:lobby';
     client.join('room:lobby');
